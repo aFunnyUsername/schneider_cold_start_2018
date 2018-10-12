@@ -103,11 +103,11 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-data/
-
+data/cold_start_test.csv
+data/consumption_train.csv
+data/meta.csv
+data/submission_format.csv
 logs/
-
 err_logs/
-
 models/
 
