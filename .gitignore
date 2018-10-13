@@ -108,6 +108,8 @@ data/cold_start_test.csv
 data/consumption_train.csv
 data/meta.csv
 data/submission_format.csv
+data/tot_ts_reorg.csv
+data/meta_reorg.csv
 logs/
 err_logs/
 models/
