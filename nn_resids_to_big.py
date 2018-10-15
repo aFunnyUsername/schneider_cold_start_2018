@@ -31,8 +31,8 @@ num_hours = num_weeks * 7 * seasonal_window
 
 zero_arr = np.zeros((num_hours, total_series))
 zero_arr[:] = np.nan
-mask_arr = np.zeros((num_hours, total_series))
-mask_arr[:] = np.nan
+pred_ind_arr = np.zeros((num_hours, total_series))
+pred_ind_arr[:] = np.nan
 
 pred_flag = False
 prev_id = 0
@@ -83,6 +83,11 @@ for i, column in enumerate(resids_daily.columns):
 				resids_df[ser_id] = series_resids_list
 		del series_resids_list[:]
 
+preds_ind_df = pd.DataFrame(index=resids_df.index, columns=resids_df.columns)
+preds_ind_df = resids_df[resids_df == 'pred']
+preds_ind_df.replace('pred', -100, inplace=True)
+preds_ind_df.to_csv('data\\preds_indicator.csv', index=False)
+resids_df.replace('pred', np.nan, inplace=True)
 resids_df.to_csv('data\\resids_by_series.csv', index=False)
 
 pred_flag = False
@@ -102,10 +107,12 @@ for i, column in enumerate(resids_df.columns):
 	start = first_day * seasonal_window
 	end = start + resids_df[column].shape[0]
 	zero_arr[start:end, i] = resids_df[column].values
+	pred_ind_arr[start:end, i] = preds_ind_df[column].values
 
 		
 	
 np.savetxt('data\\big_arr.csv', zero_arr, delimiter=',')
+np.savetxt('data\\big_pred_ind_arr.csv', pred_ind_arr, delimiter=',')
 
 
 
