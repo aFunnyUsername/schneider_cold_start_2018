@@ -112,9 +112,9 @@ for i, column in enumerate(resids_df.columns):
 		
 big_df = pd.DataFrame(zero_arr, columns=resids_df.columns)	
 reorg_preds_ind_df = pd.DataFrame(pred_ind_arr, columns=preds_ind_df.columns)
-big_df.to_csv('data\\big_df.csv', index=False)
+#big_df.to_csv('data\\big_df.csv', index=False)
 reorg_preds_ind_df.to_csv('data\\preds_indicator.csv', index=False)
-#np.savetxt('data\\big_arr.csv', zero_arr, delimiter=',')
+np.savetxt('data\\big_arr.csv', zero_arr, delimiter=',')
 #np.savetxt('data\\big_pred_ind_arr.csv', pred_ind_arr, delimiter=',')
 
 

@@ -11,7 +11,7 @@ h2o.remove_all()
 SEED=2018
 
 matrix = h2o.import_file(path='data\\big_df.csv')
-
+#print(matrix.columns)
 model = GLRM(k=1, 
 		loss='Absolute', 
 		regularization_x='L2', 
