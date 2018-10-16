@@ -27,32 +27,34 @@ data_path = Path('.\\data')
 #load all files and models needed
 model_name = '500-dense1-256-1539469736'
 model = load_model(f'models\\{model_name}.sav')
+scaler = joblib.load('models\\scalers\\standard_scaler.sav')
 
 consumption_train = read_init_data(data_path, 'consumption_train.csv')
 cold_start_test = read_init_data(data_path, 'cold_start_test.csv')
 submission_format = read_init_data(data_path, 'submission_format.csv')
 meta_data = read_init_data(data_path, 'meta.csv', meta_flag=True)
 
+
+
+
 prediction_indicator = pd.read_csv('data\\preds_indicator.csv')
 mf_component = pd.read_csv('data\\recon_big_matrix.csv')
 mf_component.columns = prediction_indicator.columns
-print(prediction_indicator)
-print(mf_component)
 seasonal_window = 24
 meta_factors = 8
 
-def generate_forecast(num_pred_days, meta, residuals, model, scaler):
+def generate_forecast(num_pred_days, meta, model, scaler):
 
 	preds_scaled = np.zeros((num_pred_days, seasonal_window)) 
 	pred_X = meta.astype(int)
-	residuals = np.reshape(residuals, (1, residuals.shape[0]))
 	
 	for i in range(num_pred_days):
 		X = pred_X[i, :].reshape(1, meta_factors)
 		yhat = model.predict(X)
-		full_yhat = yhat + residuals
-		preds_scaled[i] = full_yhat
-	
+		#full_yhat = yhat + residuals[i]
+		#preds_scaled[i] = full_yhat
+		preds_scaled[i] = yhat
+		
 	hourly_preds = scaler.inverse_transform(preds_scaled.reshape(-1, 1)).reshape(num_pred_days, seasonal_window)
 	return hourly_preds
 
@@ -67,7 +69,7 @@ pred_window_to_num_pred_days = {'hourly': 1, 'daily': 7, 'weekly': 14}
 model.reset_states()
 
 #NOTE, we will want to have some indication of the mf model hyper parameters here
-#NAME = f'{model_name}+mf'
+NAME = f'{model_name}+mf'
 
 
 for ser_id, pred_df in my_submission.groupby('series_id'):
@@ -83,7 +85,7 @@ for ser_id, pred_df in my_submission.groupby('series_id'):
 	#I just want the meta data in a preprocessed format, but the rest of this code should get updated at
 	#some point...
 	cold_start = cold_start_test[cold_start_test['series_id'] == ser_id]	
-	ts_data, meta, scaler = get_reorganized_dataframes(cold_start)
+	ts_data, meta, garb_scaler = get_reorganized_dataframes(cold_start)
 	cold_X = meta.drop('series_id', axis=1).values
 	cold_Y = ts_data.values
 	cold_Y = cold_Y.T
@@ -127,8 +129,34 @@ for ser_id, pred_df in my_submission.groupby('series_id'):
 			isOn[i] = int(1)
 	future_meta = np.repeat(future_meta, num_pred_days, axis=0)
 	future_meta = np.concatenate((future_meta, isOn), axis=1)
-	print(future_meta)
-	break
+	#print(future_meta)
+	
+	#here, get the residuals from the matrix
+	pred_loc_list = prediction_indicator[str(ser_id)][prediction_indicator[str(ser_id)] == -100].index.tolist()
+	resids = mf_component.loc[pred_loc_list, str(ser_id)].values
+	resids_reorg = resids.reshape(int(len(resids) / seasonal_window), seasonal_window)
+	
+	#preds = generate_forecast(num_pred_days, future_meta, resids_reorg, model, scaler)
+	preds = generate_forecast(num_pred_days, future_meta, model, scaler)
+
+	reduced_preds = []
+	if pred_window == 'hourly':
+		reduced_preds = preds.T
+	else:
+		for i in range(preds.shape[0]):	
+			day_sum = np.sum(preds[i, :])
+			#daily sums in a list
+			reduced_preds.append(day_sum)
+		if pred_window == 'weekly':
+			week1_sum = np.sum(reduced_preds[:int(num_pred_days / 2)])
+			week2_sum = np.sum(reduced_preds[int(num_pred_days / 2):])
+			reduced_preds = [week1_sum, week2_sum]
+			
+	#store result in submission DataFrame
+	ser_id_mask = my_submission.series_id == ser_id
+	my_submission.loc[ser_id_mask, 'consumption'] = reduced_preds
+	#print(my_submission[my_submission['series_id'] == ser_id])
+my_submission.to_csv(f'predictions\\{NAME}_avg_residuals_added.csv')
 	
 
 

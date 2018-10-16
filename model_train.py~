@@ -80,10 +80,16 @@ model.save(model_fp)
 preds = model.predict(X)
 resids = Y - preds
 
-
 resids_df = pd.DataFrame(resids.T, columns=ts_data.columns)
 
-resids_df.to_csv('data\\resids_from_nn.csv')
+resids_df.to_csv('data\\resids_from_nn.csv', index=False)
+
+#===============================================================================================================
+#Here, we will train the matrix factorization component
+#We will be imputing the missing values in the residual dataframe from the neural network
+
+resids_df = pd.read_csv('data\\resids_big_matrix.csv')
+
 
 
 
