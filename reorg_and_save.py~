@@ -150,6 +150,9 @@ def get_reorganized_dataframes(df):
 
 tot_reorg, meta, scaler = get_reorganized_dataframes(tot)
 
+tot_reorg.to_csv(data_path / 'tot_ts_reorg.csv', index=False)
+meta.to_csv(data_path / 'meta_reorg.csv', index=False)
+joblib.dump(scaler, f'models\\scalers\\standard_scaler.sav')
 
 
 

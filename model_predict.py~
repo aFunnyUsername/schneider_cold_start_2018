@@ -36,8 +36,7 @@ meta_data = read_init_data(data_path, 'meta.csv', meta_flag=True)
 prediction_indicator = pd.read_csv('data\\preds_indicator.csv')
 mf_component = pd.read_csv('data\\recon_big_matrix.csv')
 mf_component.columns = prediction_indicator.columns
-print(prediction_indicator)
-print(mf_component)
+
 seasonal_window = 24
 meta_factors = 8
 

@@ -147,12 +147,12 @@ def get_reorganized_dataframes(df):
 		full_ts = check_is_empty(full_ts, reorg_ts, 'ts')
 		full_meta = check_is_empty(full_meta, meta, 'meta')
 	return full_ts, full_meta, scaler
+print('im in reog and save')
+#tot_reorg, meta, scaler = get_reorganized_dataframes(tot)
 
-tot_reorg, meta, scaler = get_reorganized_dataframes(tot)
-
-tot_reorg.to_csv(data_path / 'tot_ts_reorg.csv', index=False)
-meta.to_csv(data_path / 'meta_reorg.csv', index=False)
-joblib.dump(scaler, f'models\\scalers\\standard_scaler.sav')
+#tot_reorg.to_csv(data_path / 'tot_ts_reorg.csv', index=False)
+#meta.to_csv(data_path / 'meta_reorg.csv', index=False)
+#joblib.dump(scaler, f'models\\scalers\\standard_scaler.sav')
 
 
 
