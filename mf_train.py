@@ -10,12 +10,12 @@ h2o.remove_all()
 
 SEED=2018
 
-matrix = h2o.import_file(path='data\\big_arr.csv')
+matrix = h2o.import_file(path='data\\big_df.csv')
 
-model = GLRM(k=24, 
+model = GLRM(k=1, 
 		loss='Absolute', 
-		regularization_x='L1', 
-		regularization_y='L1',
+		regularization_x='L2', 
+		regularization_y='L2',
 		init='svd')
 		#ignore_const_cols=False)
 #, transform='STANDARDIZE')

@@ -86,9 +86,9 @@ for i, column in enumerate(resids_daily.columns):
 preds_ind_df = pd.DataFrame(index=resids_df.index, columns=resids_df.columns)
 preds_ind_df = resids_df[resids_df == 'pred']
 preds_ind_df.replace('pred', -100, inplace=True)
-preds_ind_df.to_csv('data\\preds_indicator.csv', index=False)
+#preds_ind_df.to_csv('data\\preds_indicator.csv', index=False)
 resids_df.replace('pred', np.nan, inplace=True)
-resids_df.to_csv('data\\resids_by_series.csv', index=False)
+#resids_df.to_csv('data\\resids_by_series.csv', index=False)
 
 pred_flag = False
 
@@ -110,9 +110,12 @@ for i, column in enumerate(resids_df.columns):
 	pred_ind_arr[start:end, i] = preds_ind_df[column].values
 
 		
-	
-np.savetxt('data\\big_arr.csv', zero_arr, delimiter=',')
-np.savetxt('data\\big_pred_ind_arr.csv', pred_ind_arr, delimiter=',')
+big_df = pd.DataFrame(zero_arr, columns=resids_df.columns)	
+reorg_preds_ind_df = pd.DataFrame(pred_ind_arr, columns=preds_ind_df.columns)
+big_df.to_csv('data\\big_df.csv', index=False)
+reorg_preds_ind_df.to_csv('data\\preds_indicator.csv', index=False)
+#np.savetxt('data\\big_arr.csv', zero_arr, delimiter=',')
+#np.savetxt('data\\big_pred_ind_arr.csv', pred_ind_arr, delimiter=',')
 
 
 

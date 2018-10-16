@@ -12,10 +12,10 @@ SEED=2018
 
 matrix = h2o.import_file(path='data\\big_arr.csv')
 
-model = GLRM(k=24, 
+model = GLRM(k=1, 
 		loss='Absolute', 
-		regularization_x='L1', 
-		regularization_y='L1',
+		regularization_x='L2', 
+		regularization_y='L2',
 		init='svd')
 		#ignore_const_cols=False)
 #, transform='STANDARDIZE')
@@ -31,7 +31,7 @@ preds = model.predict(matrix)
 
 preds = h2o.as_list(preds, use_pandas=True)
 
-preds.to_csv('recon_big_matrix.csv', index=False)
+preds.to_csv('data\\recon_big_matrix.csv', index=False)
 
 
 
