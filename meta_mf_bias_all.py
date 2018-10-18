@@ -8,6 +8,13 @@ import time
 import datetime
 from datetime import datetime, timedelta
 
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.callbacks import TensorBoard
+import tensorflow.keras.backend as K
+from tensorflow import set_random_seed, GPUOptions, Session, ConfigProto
+
 data_path = Path('.\\data')
 
 def read_init_data(path, csv, meta_flag=False):
@@ -232,11 +239,101 @@ def add_unique_building(df):
 	df = df.drop('full_vector', axis=1)
 	return df
 	
-full_meta = add_unique_building(full_meta)
-full_future_meta = add_unique_building(full_future_meta)
+#full_meta = add_unique_building(full_meta)
+#full_future_meta = add_unique_building(full_future_meta)
 
-full_meta.to_csv(data_path / 'meta_reorg_with_unique.csv', index=False)
-full_future_meta.to_csv(data_path / 'future_meta_reorg_with_unique.csv', index=False)
+#full_meta.to_csv(data_path / 'meta_reorg_with_unique.csv', index=False)
+#full_future_meta.to_csv(data_path / 'future_meta_reorg_with_unique.csv', index=False)
+
+full_meta = pd.read_csv(data_path / 'meta_reorg_with_unique.csv')
+full_future_meta = pd.read_csv(data_path / 'future_meta_reorg_with_unique.csv')
+#===============================================================================================================
+#Model Training / Residual Grabbing
+
+seasonal_window = 24
+#this is the number of columns of the meta data matrix.  Note, this is AFTER one hot encoding, and grabbing the
+#daily isOff info
+meta_factors = 9
+dense_1_nodes = 256#[seasonal_window, 32, 64, 128, 256, 512]
+dense_2_nodes = 0#[0, seasonal_window, 32, 64, 128, 256, 512]
+#epochs = 500
+epochs = 1
+#epochs = 3000
+val_split = 0.2
+#learning_rates = [0.001, 0.01, 0.1, 1, 10]
+#momentums = [0.5, 0.6, 0.7, 0.8, 0.9]
+learning_rate = 0.01
+momentum = 0.8
+decay = learning_rate / epochs
+
+NAME = f"{epochs}-dense1-{dense_1_nodes}-{int(time.time())}"
+print(NAME)
+tensorboard = TensorBoard(log_dir=f'dense_logs/{NAME}')
+#meta Regression model
+meta_input = Input(shape=(meta_factors,), name='meta_input')
+#NOTE, look into the use_bias parameter here as well
+dense_1 = Dense(dense_1_nodes, activation='relu')(meta_input)
+if dense_2_nodes == 0:
+	output = Dense(seasonal_window, name='output_always_24')(dense_1)
+else:
+	dense_2 = Dense(dense_2_nodes, activation='relu')(dense_1)
+	output = Dense(seasonal_window, name='output_always_24')(dense_2)
+
+#compile model
+model = Model(inputs=meta_input, outputs=output)
+sgd = SGD(lr=learning_rate, decay=decay, momentum=momentum)
+model.compile(optimizer=sgd, loss='mae')
+
+print(model.summary())
+
+X = full_meta.drop(['series_id', 'unique_building'], axis=1).values
+Y = full_ts.values
+Y = Y.T
+
+#FIT THE MODEL HERE
+
+history = model.fit(X, Y, 
+		batch_size=32, epochs=epochs, 
+		verbose=1, validation_split=val_split,
+		callbacks=[tensorboard], shuffle=True,
+		steps_per_epoch=None)
+
+model_fp = f'models\\{NAME}.sav'
+#model.save(model_fp)
+
+#get residuals from training on just metadata
+#these will be used to impute the full residual matrix
+preds = model.predict(X)
+resids = Y - preds
+preds_df = pd.DataFrame(preds.T, columns=full_ts.columns)
+resids_df = pd.DataFrame(resids.T, columns=full_ts.columns)
+
+resids_by_unique = pd.DataFrame(resids)
+resids_by_unique = pd.concat([resids_by_unique, full_meta['unique_building']], axis=1)
+resids_by_unique_grouped = resids_by_unique.groupby('unique_building')
+mean_resids_by_unique = resids_by_unique_grouped.mean()
+
+means = mean_resids_by_unique[[number for number in range(0, 24)]].values
+
+unique_building_resids = {}
+for i, day in enumerate(means):
+	unique_building_resids[i] = day
+
+preds_df.to_csv('preds_df_TESTING.csv')
+resids_df.to_csv('resids_df_TESTING.csv')
+
+#===============================================================================================================
+#Model Predictions - NOTE still need to put MF in
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -29,10 +29,6 @@ unique_building_dict = {}
 for i in range(unique_buildings.shape[0]):
 	unique_building_dict[i] = unique_buildings[i, :]
 
-
-
-
-"""
 vector_list = []
 for i, row in enumerate(meta['series_id']):
 	full_vector = meta.iloc[i, 1:].values
@@ -48,7 +44,7 @@ meta['unique_building'] = unique_ints
 meta = meta.drop('full_vector', axis=1)
 meta.to_csv('data\\meta_reorg_with_unique.csv', index=False)
 exit()
-"""
+
 #---------------------------------------------------------------------------------------------------------------
 
 seasonal_window = 24
