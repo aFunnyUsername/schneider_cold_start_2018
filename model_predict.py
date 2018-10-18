@@ -52,6 +52,7 @@ def generate_forecast(num_pred_days, meta, residuals, model, scaler):
 		X = pred_X[i, :].reshape(1, meta_factors)
 		yhat = model.predict(X)
 		full_yhat = yhat + residuals[i]
+		print(residuals[i])	
 		preds_scaled[i] = full_yhat
 		preds_scaled[i] = yhat
 		
@@ -137,6 +138,7 @@ for ser_id, pred_df in my_submission.groupby('series_id'):
 	resids_reorg = resids.reshape(int(len(resids) / seasonal_window), seasonal_window)
 	
 	preds = generate_forecast(num_pred_days, future_meta, resids_reorg, model, scaler)
+	break
 	#preds = generate_forecast(num_pred_days, future_meta, model, scaler)
 
 	reduced_preds = []
@@ -156,7 +158,7 @@ for ser_id, pred_df in my_submission.groupby('series_id'):
 	ser_id_mask = my_submission.series_id == ser_id
 	my_submission.loc[ser_id_mask, 'consumption'] = reduced_preds
 	#print(my_submission[my_submission['series_id'] == ser_id])
-my_submission.to_csv(f'predictions\\{NAME}_avg_residuals_added.csv')
+#my_submission.to_csv(f'predictions\\{NAME}_avg_residuals_added.csv')
 	
 
 

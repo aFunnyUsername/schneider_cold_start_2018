@@ -310,12 +310,13 @@ resids_df = pd.DataFrame(resids.T, columns=full_ts.columns)
 
 resids_by_unique = pd.DataFrame(resids)
 resids_by_unique = pd.concat([resids_by_unique, full_meta['unique_building']], axis=1)
-#resids_by_unique.to_csv(data_path / 'resids_by_unique.csv')
+resids_by_unique.to_csv(data_path / 'resids_by_unique.csv')
 #resids_by_unique = pd.read_csv(data_path / 'resids_by_unique.csv')
+print(resids_by_unique)
 resids_by_unique_grouped = resids_by_unique.groupby('unique_building')
 mean_resids_by_unique = resids_by_unique_grouped.mean()
-
-means = mean_resids_by_unique[[number for number in range(0, 24)]].values
+hour_list = [number for number in range(0, 24)]
+means = mean_resids_by_unique[hour_list].values
 
 unique_building_resids = {}
 for i, day in enumerate(means):
@@ -337,10 +338,10 @@ def generate_forecast(num_pred_days, meta, bias, model, scaler):
 	
 	for i in range(num_pred_days):
 		yhat = model.predict(X[i, :].reshape(1, meta_factors))
-		print(yhat)
+		#print(yhat)
 		#full_yhat = yhat + bias[i]
-		print(bias[i])
-		print(full_yhat)	
+		#print(bias[i])
+		#print(full_yhat)	
 		#preds_scaled[i] = full_yhat
 		preds_scaled[i] = yhat	
 	hourly_preds = scaler.inverse_transform(preds_scaled.reshape(-1, 1)).reshape(num_pred_days, seasonal_window)
