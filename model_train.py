@@ -24,16 +24,15 @@ ts_data = pd.read_csv('data\\tot_ts_reorg.csv')
 meta = pd.read_csv('data\\meta_reorg.csv')
 
 meta_matrix = meta.iloc[:, 1:].values
-print(meta_matrix)
-print(meta_matrix.shape)
 unique_buildings = np.unique(meta_matrix, axis=0)
 unique_building_dict = {}
 for i in range(unique_buildings.shape[0]):
 	unique_building_dict[i] = unique_buildings[i, :]
 
-print(unique_buildings)
-print(unique_building_dict)
 
+
+
+"""
 vector_list = []
 for i, row in enumerate(meta['series_id']):
 	full_vector = meta.iloc[i, 1:].values
@@ -42,19 +41,14 @@ meta['full_vector'] = vector_list
 
 unique_ints = []
 for vector in meta['full_vector']:
-	print('1')
-	print(vector)
 	for key, value in unique_building_dict.items():
-		print('2')	
-		print(value)
 		if np.array_equal(vector, value):
 			unique_ints.append(key)
-			print(len(unique_ints))
 meta['unique_building'] = unique_ints
-print(meta)
 meta = meta.drop('full_vector', axis=1)
 meta.to_csv('data\\meta_reorg_with_unique.csv', index=False)
 exit()
+"""
 #---------------------------------------------------------------------------------------------------------------
 
 seasonal_window = 24
