@@ -257,7 +257,7 @@ meta_factors = 9
 dense_1_nodes = 256#[seasonal_window, 32, 64, 128, 256, 512]
 dense_2_nodes = 0#[0, seasonal_window, 32, 64, 128, 256, 512]
 #epochs = 500
-epochs = 1
+epochs = 250
 #epochs = 3000
 val_split = 0.2
 #learning_rates = [0.001, 0.01, 0.1, 1, 10]
@@ -299,7 +299,7 @@ history = model.fit(X, Y,
 		steps_per_epoch=None)
 
 model_fp = f'models\\{NAME}.sav'
-#model.save(model_fp)
+model.save(model_fp)
 
 #get residuals from training on just metadata
 #these will be used to impute the full residual matrix
@@ -310,6 +310,8 @@ resids_df = pd.DataFrame(resids.T, columns=full_ts.columns)
 
 resids_by_unique = pd.DataFrame(resids)
 resids_by_unique = pd.concat([resids_by_unique, full_meta['unique_building']], axis=1)
+#resids_by_unique.to_csv(data_path / 'resids_by_unique.csv')
+#resids_by_unique = pd.read_csv(data_path / 'resids_by_unique.csv')
 resids_by_unique_grouped = resids_by_unique.groupby('unique_building')
 mean_resids_by_unique = resids_by_unique_grouped.mean()
 
@@ -318,25 +320,79 @@ means = mean_resids_by_unique[[number for number in range(0, 24)]].values
 unique_building_resids = {}
 for i, day in enumerate(means):
 	unique_building_resids[i] = day
-
+print(unique_building_resids)
 preds_df.to_csv('preds_df_TESTING.csv')
 resids_df.to_csv('resids_df_TESTING.csv')
 
 #===============================================================================================================
 #Model Predictions - NOTE still need to put MF in
 
+prediction_indicator = pd.read_csv('data\\preds_indicator.csv')
+mf_component = pd.read_csv('data\\recon_big_matrix.csv')
+mf_component.columns = prediction_indicator.columns
 
+def generate_forecast(num_pred_days, meta, bias, model, scaler):
 
+	preds_scaled = np.zeros((num_pred_days, seasonal_window)) 
+	
+	for i in range(num_pred_days):
+		yhat = model.predict(X[i, :].reshape(1, meta_factors))
+		print(yhat)
+		#full_yhat = yhat + bias[i]
+		print(bias[i])
+		print(full_yhat)	
+		#preds_scaled[i] = full_yhat
+		preds_scaled[i] = yhat	
+	hourly_preds = scaler.inverse_transform(preds_scaled.reshape(-1, 1)).reshape(num_pred_days, seasonal_window)
+	return hourly_preds
 
+model_name = NAME
+model = load_model(f'models\\{model_name}.sav')
+NAME = f'{model_name}+mf_TEST'
 
+for ser_id, pred_df in my_submission.groupby('series_id'):
+	print(f'series_id: {ser_id}')
 
+	pred_window = pred_df.prediction_window.unique()[0]
+	num_preds = pred_window_to_num_preds[pred_window]
+	num_pred_days = pred_window_to_num_pred_days[pred_window] 
 
+	#get the meta data for the prediction windows:
+	
+	#NOTE, this is not all necessary, since we already trained on the cold_x and y data. 
+	#I just want the meta data in a preprocessed format, but the rest of this code should get updated at
+	#some point...
+	cold_start = cold_start_test[cold_start_test['series_id'] == ser_id]	
+	garb1, garb2, garb3, scaler = get_reorganized_dataframes(cold_start)
 
+	meta = full_future_meta[full_future_meta['series_id'] == ser_id]
+	
+	X = meta.drop(['series_id', 'unique_building'], axis=1).values
+	
+	bias = []
+	for value in meta['unique_building']:
+		bias.append(unique_building_resids[value])
 
+	preds = generate_forecast(num_pred_days, meta, bias, model, scaler)
 
-
-
-
+	reduced_preds = []
+	if pred_window == 'hourly':
+		reduced_preds = preds.T
+	else:
+		for i in range(preds.shape[0]):	
+			day_sum = np.sum(preds[i, :])
+			#daily sums in a list
+			reduced_preds.append(day_sum)
+		if pred_window == 'weekly':
+			week1_sum = np.sum(reduced_preds[:int(num_pred_days / 2)])
+			week2_sum = np.sum(reduced_preds[int(num_pred_days / 2):])
+			reduced_preds = [week1_sum, week2_sum]
+			
+	#store result in submission DataFrame
+	ser_id_mask = my_submission.series_id == ser_id
+	my_submission.loc[ser_id_mask, 'consumption'] = reduced_preds
+	#print(my_submission[my_submission['series_id'] == ser_id])
+my_submission.to_csv(f'predictions\\{NAME}_bias_added.csv')
 
 
 
